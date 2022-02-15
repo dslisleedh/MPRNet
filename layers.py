@@ -7,6 +7,11 @@ class CABlock(tf.keras.layers.Layer):
                  c,
                  r=16
                  ):
+        '''
+        Channel-Attention Block
+        :param c:
+        :param r:
+        '''
         super(CABlock, self).__init__()
         self.c = c
         self.r = r
@@ -54,6 +59,10 @@ class SAModule(tf.keras.layers.Layer):
     def __init__(self,
                  c
                  ):
+        '''
+        Supervised-Attention Module
+        :param c:
+        '''
         super(SAModule, self).__init__()
         self.c = c
 
@@ -104,4 +113,28 @@ class ORBlock(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         return inputs + self.forward(inputs)
+
+
+class Upsample(tf.keras.layers.Layer):
+    def __init__(self,
+                 c
+                 ):
+        super(Upsample, self).__init__()
+        self.c = c
+
+        self.forward = tf.keras.Sequential([
+            tf.keras.layers.UpSampling2D(size=2,
+                                         interpolation='bilinear'
+                                         ),
+            tf.keras.layers.Conv2D(filters=c,
+                                   kernel_size=1,
+                                   strides=1,
+                                   padding='valid',
+                                   use_bias=False
+                                   )
+        ])
+        
+    def call(self, inputs, *args, **kwargs):
+        return self.forward(inputs)
+
 
