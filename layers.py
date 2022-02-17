@@ -101,7 +101,7 @@ class ORBlock(tf.keras.layers.Layer):
         self.num_cabs = num_cabs
 
         self.forward = tf.keras.Sequential([
-            CABlock(self.c)
+            CABlock(self.c) for _ in range(self.num_cabs)
         ] + [
             tf.keras.layers.Conv2D(self.c,
                                    kernel_size=(3, 3),
@@ -136,5 +136,27 @@ class Upsample(tf.keras.layers.Layer):
         
     def call(self, inputs, *args, **kwargs):
         return self.forward(inputs)
+
+
+class Downsample(tf.keras.layers.Layer):
+    def __init__(self,
+                 c
+                 ):
+        super(Downsample, self).__init__()
+        self.c = c
+
+        self.Conv = tf.keras.layers.Conv2D(filters=self.c,
+                                           kernel_size=1,
+                                           strides=1,
+                                           padding='valid',
+                                           use_bias=False
+                                           )
+
+    def call(self, inputs, **kwargs):
+        b, h, w, c = inputs.get_shape().as_list()
+        inputs = tf.image.resize(inputs,
+                                 size=[h//2, w//2]
+                                 )
+        return self.Conv(inputs)
 
 
