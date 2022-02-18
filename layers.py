@@ -87,7 +87,7 @@ class SAModule(tf.keras.layers.Layer):
 
     def call(self, feature, img):
         recon_img = img + self.to_rs(feature)
-        attention = self.to_attention(recon_img)
+        attention = tf.nn.sigmoid(self.to_attention(recon_img))
         return feature + tf.multiply(self.residual(feature), attention), recon_img
 
 
@@ -117,13 +117,15 @@ class ORBlock(tf.keras.layers.Layer):
 
 class Upsample(tf.keras.layers.Layer):
     def __init__(self,
-                 c
+                 c,
+                 rate=2
                  ):
         super(Upsample, self).__init__()
         self.c = c
+        self.rate = rate
 
         self.forward = tf.keras.Sequential([
-            tf.keras.layers.UpSampling2D(size=2,
+            tf.keras.layers.UpSampling2D(size=self.rate,
                                          interpolation='bilinear'
                                          ),
             tf.keras.layers.Conv2D(filters=c,
@@ -140,10 +142,12 @@ class Upsample(tf.keras.layers.Layer):
 
 class Downsample(tf.keras.layers.Layer):
     def __init__(self,
-                 c
+                 c,
+                 rate=2
                  ):
         super(Downsample, self).__init__()
         self.c = c
+        self.rate = rate
 
         self.Conv = tf.keras.layers.Conv2D(filters=self.c,
                                            kernel_size=1,
@@ -155,7 +159,7 @@ class Downsample(tf.keras.layers.Layer):
     def call(self, inputs, **kwargs):
         b, h, w, c = inputs.get_shape().as_list()
         inputs = tf.image.resize(inputs,
-                                 size=[h//2, w//2]
+                                 size=[h//self.rate, w//self.rate]
                                  )
         return self.Conv(inputs)
 
