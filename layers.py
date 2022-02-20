@@ -164,3 +164,31 @@ class Downsample(tf.keras.layers.Layer):
         return self.Conv(inputs)
 
 
+class ReplicatePadding2D(tf.keras.layers.Layer):
+    def __init__(self, n_pad):
+        super(ReplicatePadding2D, self).__init__()
+        self.n_pad = n_pad
+
+    def call(self, inputs, **kwargs):
+        b, h, w, c = inputs.get_shape().as_list()
+        top = tf.concat([inputs[:, :1, :, :] for _ in range(self.n_pad)],
+                        axis=1
+                        )
+        bottom = tf.concat([inputs[:, h-1:, :, :] for _ in range(self.n_pad)],
+                           axis=1
+                           )
+        inputs = tf.concat([top, inputs, bottom],
+                           axis=1
+                           )
+        left = tf.concat([inputs[:, :, :1, :] for _ in range(self.n_pad)],
+                         axis=2
+                         )
+        right = tf.concat([inputs[:, :, w-1:, :] for _ in range(self.n_pad)],
+                          axis=2
+                          )
+        inputs = tf.concat([left, inputs, right],
+                           axis=2
+                           )
+        return inputs
+
+
