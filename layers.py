@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 
 
 class CABlock(tf.keras.layers.Layer):
-    def __init__(self,
+    def __init__(self, 
                  c,
                  r=16
                  ):
@@ -192,3 +192,71 @@ class ReplicatePadding2D(tf.keras.layers.Layer):
         return inputs
 
 
+################## Modules #################
+
+
+class Encoder(tf.keras.layers.Layer):
+    def __init__(self):
+        super(Encoder, self).__init__()
+
+    def call(self, inputs, *args, **kwargs):
+        return
+
+class Decoder(tf.keras.layers.Layer):
+    def __init__(self):
+        super(Decoder, self).__init__()
+
+    def call(self, inputs, *args, **kwargs):
+        return
+
+class ORSNet(tf.keras.layers.Layer):
+    def __init__(self,
+                 c,
+                 scale_c,
+                 epsilon=1e-3
+                 ):
+        super(ORSNet, self).__init__()
+        self.c = c
+        self.scale_c = scale_c
+        self.epsilon = epsilon
+
+        self.Orb1 = ORBlock(self.c+self.scale_c)
+        self.Orb2 = ORBlock(self.c+self.scale_c)
+        self.Orb3 = ORBlock(self.c+self.scale_c)
+
+        self.UpEnc1 = Upsample(self.scale_c)
+        self.UpDec1 = Upsample(self.scale_c)
+        self.UpEnc2 = tf.keras.Sequential([
+            Upsample(self.scale_c+self.scale_c),
+            Upsample(self.scale_c)
+        ])
+        self.UpDec2 = tf.keras.Sequential([
+            Upsample(self.scale_c+self.scale_c),
+            Upsample(self.scale_c)
+        ])
+
+        self.ConvEnc1 = self.construct_layerconv()
+        self.ConvDec1 = self.construct_layerconv()
+        self.ConvEnc2 = self.construct_layerconv()
+        self.ConvDec2 = self.construct_layerconv()
+        self.ConvEnc3 = self.construct_layerconv()
+        self.ConvDec3 = self.construct_layerconv()
+
+    def construct_layerconv(self):
+        return tf.keras.layers.Conv2D(self.c + self.scale_c,
+                                      kernel_size=1,
+                                      padding='same',
+                                      activation='linear',
+                                      use_bias=False
+                                      )
+
+    def call(self, inputs, encoder_outputs, decoder_outputs):
+        inputs = self.Orb1(inputs)
+        inputs = inputs + self.ConvEnc1(encoder_outputs[0]) + self.ConvDec1(decoder_outputs[0])
+
+        inputs = self.Orb2(inputs)
+        inputs = inputs + self.ConvEnc2(self.UpEnc1(encoder_outputs[1])) + self.ConvDec2(self.UpDec1(decoder_outputs[1]))
+
+        inputs = self.Orb3(inputs)
+        inputs = inputs + self.ConvEnc3(self.UpEnc2(encoder_outputs[2])) + self.ConvDec3(self.UpDec2(decoder_outputs[2]))
+        return inputs

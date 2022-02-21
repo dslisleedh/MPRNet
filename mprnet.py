@@ -2,12 +2,16 @@ from layers import *
 import tensorflow as tf
 
 
-class ORSNet(tf.keras.layers.Layer):
+class MPRNet(tf.keras.models.Model):
     def __init__(self,
-                 epsilon = 1e-3
+                 c,
+                 ors_scale_c
                  ):
-        super(ORSNet, self).__init__()
-        self.epsilon = epsilon
+        super(MPRNet, self).__init__()
+        self.c = c
+        self.ors_scale_c = ors_scale_c
+
+        self.ORS = ORSNet(self.c, self.ors_scale_c)
 
     @tf.function
     def compute_charbonnier_loss(self, x_s, y):
